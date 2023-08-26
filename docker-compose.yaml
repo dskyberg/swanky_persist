@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  redis:
+    container_name: redis
+    image: redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - redis:/data
+  mongo:
+    container_name: mongo
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo:/data/db
+
+
+volumes:
+  redis:
+    name: redis
+    driver: local
+
+  mongo:
+    name: mongo
+    driver: local
