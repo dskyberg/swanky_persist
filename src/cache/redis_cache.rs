@@ -1,6 +1,4 @@
-/// Cache abstraction layer
-/// The crate currently only supports Redis.  But extending to support other
-/// cache services is as simple as
+/// Cache implementation for Redis
 use redis::{aio::ConnectionManager, AsyncCommands, Client, Value};
 use serde::{de::DeserializeOwned, Serialize};
 
