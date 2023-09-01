@@ -1,18 +1,20 @@
 /// Cache implementation for Redis
+use std::sync::Arc;
+
 use redis::{aio::ConnectionManager, AsyncCommands, Client, Value};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{Cacheable, DaoError, DaoResult, DataServicesConfig};
 
 #[derive(Clone)]
-pub struct Cache<'a> {
-    pub config: &'a DataServicesConfig,
+pub struct Cache {
+    pub config: Arc<DataServicesConfig>,
     pub client: Client,
     pub connection_manager: ConnectionManager,
 }
 
-impl<'a> Cache<'a> {
-    pub async fn new(config: &'a DataServicesConfig) -> DaoResult<Cache<'a>> {
+impl Cache {
+    pub async fn new(config: Arc<DataServicesConfig>) -> DaoResult<Cache> {
         let client = Client::open(config.cache_uri.clone())
             .map_err(|_| DaoError::ServiceError("Redis: Failed to create client".to_string()))?;
 

@@ -15,6 +15,8 @@ pub enum DaoError {
     MongoDataError(#[from] mongodb::bson::document::ValueAccessError),
     #[error("Cache error: {0}")]
     CacheError(#[from] redis::RedisError),
+    #[error("A value with this id already exists: {0}")]
+    IdExists(String),
     #[error("Not found error")]
     NotFound,
     #[error("General error")]

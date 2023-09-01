@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use mongodb::{
     bson::{doc, Bson},
     options::ClientOptions,
@@ -9,12 +11,13 @@ use crate::{DaoError, DaoResult, DataServicesConfig, Persistable};
 
 #[derive(Clone, Debug)]
 pub struct DB {
+    pub config: Arc<DataServicesConfig>,
     pub client: Client,
     pub database: Database,
 }
 
 impl DB {
-    pub async fn new(config: &DataServicesConfig) -> DaoResult<Self> {
+    pub async fn new(config: Arc<DataServicesConfig>) -> DaoResult<Self> {
         // Create the ClientOptions and set the app_name
         let mut client_options = ClientOptions::parse(&config.db_uri).await.map_err(|_| {
             DaoError::ServiceError("MongoDB: failed to parse client options".to_string())
@@ -25,25 +28,39 @@ impl DB {
         let client = Client::with_options(client_options)
             .map_err(|_| DaoError::ServiceError("Failed to create MongoDB client".to_string()))?;
         let database = client.database(&config.db_database);
-        Ok(Self { client, database })
+        Ok(Self {
+            config,
+            client,
+            database,
+        })
     }
 
     pub async fn add<T>(&self, value: T) -> DaoResult<T>
     where
-        T: core::fmt::Debug + Clone + Serialize + Persistable,
+        T: core::fmt::Debug
+            + Clone
+            + Send
+            + Sync
+            + Unpin
+            + DeserializeOwned
+            + Serialize
+            + Persistable,
     {
         let collection_name = T::collection_name();
 
         let collection = self.database.collection::<T>(collection_name);
-        match collection.insert_one(&value, None).await {
-            Ok(_) => {
-                log::trace!("Added {}: {}", collection_name, value.collection_id());
-                Ok(value)
-            }
-            Err(err) => {
-                log::error!("Error saving {}: {:?}", collection_name, &err);
-                Err(DaoError::DatabaseError(err).into())
-            }
+        match self.fetch_by_id::<T>(&value.collection_id()).await? {
+            Some(_) => Err(DaoError::IdExists(value.collection_id()).into()),
+            None => match collection.insert_one(&value, None).await {
+                Ok(_) => {
+                    log::trace!("Added {}: {}", collection_name, value.collection_id());
+                    Ok(value)
+                }
+                Err(err) => {
+                    log::error!("Error saving {}: {:?}", collection_name, &err);
+                    Err(DaoError::DatabaseError(err).into())
+                }
+            },
         }
     }
 

@@ -2,6 +2,7 @@
 //! # Example
 //! ```
 //! # tokio_test::block_on(async {
+//!  use std::sync::Arc;
 //!  use std::env;
 //!  use swanky_persist::*;
 //!
@@ -52,9 +53,9 @@
 //!  };
 //!
 //!  let data_services_config =
-//!      DataServicesConfig::new().expect("Failed to create DataServicesConfig");
+//!      Arc::new(DataServicesConfig::new().expect("Failed to create DataServicesConfig"));
 //!
-//!  let services = DataServices::new(&data_services_config)
+//!  let services = DataServices::new(data_services_config.clone())
 //!     .await
 //!      .expect("Services failed. Did you remember to start them?");
 //!

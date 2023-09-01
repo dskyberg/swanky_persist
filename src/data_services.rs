@@ -3,33 +3,42 @@
 /// Into<mongodb::bson::Bson>. While you don't have to implement that for your structs, it does have
 /// to be declared as a trrait on the `modify` methods.  If anyone can figure out how I can
 /// abstract to just use serde traits, that would be awesome!
+use std::sync::Arc;
+
 use serde::{de::DeserializeOwned, Serialize};
 
 use super::{Cache, Cacheable, DaoResult, DataServicesConfig, Persistable, DB};
 
 #[derive(Clone)]
-pub struct DataServices<'a> {
-    pub config: &'a DataServicesConfig,
+pub struct DataServices {
+    pub config: Arc<DataServicesConfig>,
     /// Represents the Redis cache client
-    pub cache: Cache<'a>,
+    pub cache: Cache,
     pub db: DB,
 }
 
 #[allow(dead_code)]
-impl<'a> DataServices<'a> {
+impl DataServices {
     /// Establishes the client connections to the database and cache.
     ///
     /// This should be called only once in the crate main.
-    pub async fn new(config: &'a DataServicesConfig) -> DaoResult<DataServices<'a>> {
-        let cache = Cache::new(config).await?;
-        let db = DB::new(config).await?;
+    pub async fn new(config: Arc<DataServicesConfig>) -> DaoResult<DataServices> {
+        let cache = Cache::new(config.clone()).await?;
+        let db = DB::new(config.clone()).await?;
         Ok(DataServices { config, cache, db })
     }
 
     /// Add an object instance to the DB
     pub async fn add<T>(&self, value: T) -> DaoResult<T>
     where
-        T: core::fmt::Debug + Clone + Serialize + Persistable,
+        T: core::fmt::Debug
+            + Clone
+            + Send
+            + Sync
+            + Unpin
+            + DeserializeOwned
+            + Serialize
+            + Persistable,
     {
         self.db.add(value).await
     }
@@ -37,7 +46,15 @@ impl<'a> DataServices<'a> {
     /// Add an object to the db and cache it
     pub async fn add_cached<T>(&self, value: T) -> DaoResult<T>
     where
-        T: Persistable + Cacheable + std::fmt::Debug + std::clone::Clone + Serialize,
+        T: core::fmt::Debug
+            + Clone
+            + Send
+            + Sync
+            + Unpin
+            + DeserializeOwned
+            + Serialize
+            + Cacheable
+            + Persistable,
     {
         let result = self.db.add(value).await?;
         self.cache.put(&result).await?;

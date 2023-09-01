@@ -3,22 +3,24 @@
 Simple Rust based cached persistance model using Mongodb and Redis.
 
 The primary goal of this crate is to make caching and persisting data easy. The crate exposes two
-traits. [Cacheable](./src/cacheable.rs) and [Persistable]("./src/persistable"). Once these traits are impleemented for your data model, you and persist away!
+traits. [Cacheable](./src/cacheable.rs) and [Persistable](./src/persistable.rs). Once these traits are impleemented for your data model, you and persist away!
 
 Brought to you by the Swankymutt himself.
 
-## Models
-
-
 ## Configuration
+
+The configuration, managed by [DataServicesConfig](./src/data_services_config.rs), is designed to be thread safe.
+This isn't needed at all at this point.  But it allows a single instance of the config to be shared across the DB
+and Cache instances.  Given the primary target of this crate is to manage data services for web servers, it
+makes sense to make the data thread safe to start with.
 
 Create a .env file and add the following.  Note: there are no defaults.  You must set these.
 
 ```env
-SWANKY_DB_DATABASE=<string>
-SWANKY_DB_APP_NAME=<string>
-SWANKY_DB_URI=<uri>
-SWANKY_CACHE_URI=<uri>
+SWANKY_DB_DATABASE=demo
+SWANKY_DB_APP_NAME=demo
+SWANKY_DB_URI=mongodb://127.0.0.1:27017
+SWANKY_CACHE_URI=redis://127.0.0.1
 ```
 ## Running
 
