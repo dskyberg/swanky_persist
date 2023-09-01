@@ -1,3 +1,4 @@
+use futures::stream::TryStreamExt;
 use std::sync::Arc;
 
 use mongodb::{
@@ -64,7 +65,44 @@ impl DB {
         }
     }
 
-    pub async fn fetch_by_id<'a, T>(&self, id: &str) -> DaoResult<Option<T>>
+    pub async fn fetch<T, K>(
+        &self,
+        key: Option<&str>,
+        value: Option<K>,
+    ) -> DaoResult<Option<Vec<T>>>
+    where
+        T: Clone + DeserializeOwned + Unpin + Send + Sync + Persistable,
+        K: Serialize,
+    {
+        let collection_name = T::collection_name();
+        let filter = match (key, value) {
+            (Some(k), Some(v)) => doc! {k: serde_json::to_string(&v)?},
+            _ => doc! {},
+        };
+
+        let cursor_result = self
+            .database
+            .collection::<T>(collection_name)
+            .find(filter, None)
+            .await
+            .map_err(DaoError::DatabaseError);
+
+        match cursor_result {
+            Ok(cursor) => {
+                let result = cursor.try_collect::<Vec<T>>().await?;
+                if result.is_empty() {
+                    return Ok(None);
+                }
+                Ok(Some(result))
+            }
+            Err(e) => {
+                log::trace!("fetch returned en error: {:?}", e);
+                Err(e.into())
+            }
+        }
+    }
+
+    pub async fn fetch_by_id<T>(&self, id: &str) -> DaoResult<Option<T>>
     where
         T: Clone + DeserializeOwned + Unpin + Send + Sync + Persistable,
     {

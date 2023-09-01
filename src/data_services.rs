@@ -70,6 +70,17 @@ impl DataServices {
         self.db.fetch_by_id::<T>(id).await
     }
 
+    pub async fn fetch_some<T, K>(
+        &self,
+        key: Option<&str>,
+        value: Option<K>,
+    ) -> DaoResult<Option<Vec<T>>>
+    where
+        T: Clone + DeserializeOwned + Unpin + Send + Sync + Persistable,
+        K: Serialize,
+    {
+        self.db.fetch(key, value).await
+    }
     /// Fetch a possibly cached object.
     /// Looks in cache first.  If not found, it looks in DB.  If found, it adds t
     /// the cache.
