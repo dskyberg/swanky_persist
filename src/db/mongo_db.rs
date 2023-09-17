@@ -181,7 +181,10 @@ impl DB {
             .collection::<T>(collection_name)
             .delete_one(filter, None)
             .await
-            .map_err(DaoError::DatabaseError)?;
+            .map_err(|e| {
+                log::error!("Failed to delete: {}", e.to_string());
+                DaoError::DatabaseError(e)
+            })?;
         log::trace!(
             "Deleted {} - {}:{}",
             collection_name,

@@ -63,28 +63,28 @@ impl DataServices {
 
     /// Fetch an object.
     /// This fetches straight from the db.  No cache involved.
-    pub async fn fetch<T>(&self, id: &str) -> DaoResult<Option<T>>
+    pub async fn fetch_by_id<T>(&self, id: &str) -> DaoResult<Option<T>>
     where
         T: Clone + DeserializeOwned + Unpin + Send + Sync + Persistable,
     {
         self.db.fetch_by_id::<T>(id).await
     }
 
-    pub async fn fetch_some<T, K>(
-        &self,
-        key: Option<&str>,
-        value: Option<K>,
-    ) -> DaoResult<Option<Vec<T>>>
+    /// Fetch multiple
+    pub async fn fetch<T, K>(&self, key: Option<&str>, value: Option<K>) -> DaoResult<Vec<T>>
     where
         T: Clone + DeserializeOwned + Unpin + Send + Sync + Persistable,
         K: Serialize,
     {
-        self.db.fetch(key, value).await
+        match self.db.fetch::<T, K>(key, value).await? {
+            Some(v) => Ok(v),
+            None => Ok(Vec::<T>::new()),
+        }
     }
     /// Fetch a possibly cached object.
     /// Looks in cache first.  If not found, it looks in DB.  If found, it adds t
     /// the cache.
-    pub async fn fetch_cached<T>(&self, id: &str) -> DaoResult<Option<T>>
+    pub async fn fetch_by_id_cached<T>(&self, id: &str) -> DaoResult<Option<T>>
     where
         T: Clone + Persistable + Cacheable + DeserializeOwned + Serialize + Unpin + Send + Sync,
     {
