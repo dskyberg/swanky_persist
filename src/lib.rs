@@ -1,5 +1,5 @@
 #![ doc=include_str!( "../README.md")]
-//! # Example
+//! ## Example
 //! ```
 //! # tokio_test::block_on(async {
 //!  use std::sync::Arc;
@@ -17,7 +17,7 @@
 //!      name: String,
 //!      description: String,
 //!  }
-
+//!
 //!  const DEMO_STRUCT: &str = "demo_struct";
 //!  const DEMO_STRUCT_ID_FIELD: &str = "id";
 //!
@@ -98,18 +98,42 @@
 //!  assert!(result.is_none());
 //! # })
 //! ```
+//!
+//! ## Derive Macros
+//! Derive macros are also available when using the `derive` feature.
+//! See [swanky_persist_derive_cache] and [swanky_persist_derive_persist].
+//!
+//! Example:
+//! ```rust
+//! //!  #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, PartialEq, Cache, Persist)]
+//!  struct DemoStruct {
+//!      id: String,
+//!      name: String,
+//!      description: String,
+//!  }
+//! ```
+
 pub use cache::redis_cache::*;
-pub use cacheable::*;
 pub use dao_error::*;
 pub use data_services::*;
 pub use data_services_config::*;
 pub use db::mongo_db::*;
-pub use persistable::*;
+pub use swanky_persist_cacheable::*;
+pub use swanky_persist_persistable::*;
 
 mod cache;
-mod cacheable;
 mod dao_error;
 mod data_services;
 mod data_services_config;
 mod db;
-mod persistable;
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate swanky_persist_derive_persist;
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate swanky_persist_derive_cache;
+
+pub use swanky_persist_derive_cache::Cache;
+pub use swanky_persist_derive_persist::Persist;
